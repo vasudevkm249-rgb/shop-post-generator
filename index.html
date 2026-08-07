@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shop Post Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #FAF6EF;
+    font-family: 'Work Sans', ui-sans-serif, system-ui;
+    color: #1E2A45;
+  }
+  .display-font { font-family: 'Fraunces', serif; }
+  .ml-font { font-family: 'Noto Sans Malayalam', sans-serif; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 40px 20px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #1E2A45; color: #E8A33D;
+    padding: 4px 16px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 40px; line-height: 1.15; margin: 0 0 12px; }
+  .subtitle { color: #5C5140; font-size: 16px; margin: 0 0 32px; }
+  .card {
+    background: #FFFFFF; border: 1px solid #E4D9C3; border-radius: 16px;
+    padding: 24px; margin-bottom: 16px;
+  }
+  label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  input, select, textarea {
+    width: 100%; border: 1px solid #E4D9C3; background: #FAF6EF;
+    border-radius: 8px; padding: 10px 12px; font-family: inherit; font-size: 14px;
+    margin-bottom: 16px; outline: none;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  button.primary {
+    width: 100%; background: #B0472E; color: #fff; border: none;
+    border-radius: 8px; padding: 14px; font-weight: 600; font-size: 15px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .error { color: #B0472E; font-size: 14px; margin-top: 8px; }
+  .saved-note { font-size: 13px; color: #9A8B6A; margin-top: -6px; margin-bottom: 16px; }
+  .saved-note a { color: #B0472E; cursor: pointer; text-decoration: underline; }
+  .results-title { font-size: 24px; margin: 32px 0 16px; }
+  .lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 560px) { .lang-grid { grid-template-columns: 1fr; } .row2 { grid-template-columns: 1fr; } }
+  .lang-box { background: #FAF6EF; border-radius: 12px; padding: 16px; }
+  .lang-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #9A8B6A; margin-bottom: 8px; }
+  .hook { color: #B0472E; font-size: 16px; margin-bottom: 8px; }
+  .caption { font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+  button.small {
+    font-size: 12px; font-weight: 500; padding: 6px 10px; border-radius: 8px;
+    cursor: pointer; border: 1px solid #E4D9C3; background: #fff; color: #1E2A45;
+  }
+  button.small.dark { background: #1E2A45; color: #fff; border: none; }
+  .hashtags { color: #E8A33D; font-size: 14px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="badge">🏪 For shop owners</div>
+  <h1 class="display-font">Turn today's special<br/>into tomorrow's post.</h1>
+  <p class="subtitle">Fill in what's happening at your shop. Get three ready-to-post captions, in English and Malayalam.</p>
+
+  <div class="card">
+    <label>Business name</label>
+    <input id="businessName" placeholder="e.g. Thara's Tailoring" />
+
+    <label>Type of business</label>
+    <input id="businessType" placeholder="e.g. tailoring shop, tea stall, hardware store" />
+
+    <label>What do you want to promote?</label>
+    <textarea id="promoDetails" placeholder="e.g. New arrival of Onam sarees, free stitching alterations this week"></textarea>
+
+    <div class="row2">
+      <div>
+        <label>Tone</label>
+        <select id="tone">
+          <option>Warm & friendly</option>
+          <option>Bold & festive</option>
+          <option>Professional & polished</option>
+        </select>
+      </div>
+      <div>
+        <label>Platform</label>
+        <select id="platform">
+          <option>Instagram caption</option>
+          <option>WhatsApp status</option>
+          <option>Facebook post</option>
+        </select>
+      </div>
+    </div>
+
+    <p class="saved-note" id="savedNote" style="display:none;">Using your saved shop details. <a id="clearSaved">Clear</a></p>
+
+    <button class="primary" id="generateBtn">✨ Generate posts</button>
+    <p class="error" id="errorMsg" style="display:none;"></p>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<script>
+const PALETTES = [["#1E2A45","#3D5375"], ["#B0472E","#D9713F"], ["#5C4A8A","#8B6FB0"], ["#2F5D4F","#5A8A76"]];
+
+const businessNameEl = document.getElementById('businessName');
+const businessTypeEl = document.getElementById('businessType');
+const promoDetailsEl = document.getElementById('promoDetails');
+const toneEl = document.getElementById('tone');
+const platformEl = document.getElementById('platform');
+const generateBtn = document.getElementById('generateBtn');
+const errorMsg = document.getElementById('errorMsg');
+const resultsEl = document.getElementById('results');
+const savedNote = document.getElementById('savedNote');
+
+// Load saved profile
+const saved = JSON.parse(localStorage.getItem('shopProfile') || 'null');
+if (saved) {
+  businessNameEl.value = saved.businessName || '';
+  businessTypeEl.value = saved.businessType || '';
+  savedNote.style.display = 'block';
+}
+
+document.getElementById('clearSaved').addEventListener('click', () => {
+  localStorage.removeItem('shopProfile');
+  businessNameEl.value = '';
+  businessTypeEl.value = '';
+  savedNote.style.display = 'none';
+});
+
+function saveProfile() {
+  localStorage.setItem('shopProfile', JSON.stringify({
+    businessName: businessNameEl.value,
+    businessType: businessTypeEl.value,
+  }));
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function downloadGraphic(idx, lang, hook, businessName) {
+  const canvas = document.createElement('canvas');
+  const size = 1080;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const [c1, c2] = PALETTES[idx % PALETTES.length];
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, c1);
+  grad.addColorStop(1, c2);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  ctx.font = "600 32px 'Work Sans', sans-serif";
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText(businessName.toUpperCase(), 70, 110);
+
+  const hookFont = lang === 'ml' ? "700 68px 'Noto Sans Malayalam', sans-serif" : "700 76px 'Fraunces', serif";
+  ctx.font = hookFont;
+  ctx.fillStyle = '#FFFFFF';
+  const lines = wrapText(ctx, hook, size - 140);
+  const lineHeight = lang === 'ml' ? 84 : 90;
+  const startY = size / 2 - ((lines.length - 1) * lineHeight) / 2;
+  lines.forEach((l, i) => ctx.fillText(l, 70, startY + i * lineHeight));
+
+  const link = document.createElement('a');
+  link.download = `${businessName.replace(/\s+/g, '-').toLowerCase() || 'post'}-graphic-${lang}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text);
+  const original = btn.textContent;
+  btn.textContent = '✓ Copied';
+  setTimeout(() => { btn.textContent = original; }, 1500);
+}
+
+function renderResults(posts, businessName) {
+  resultsEl.innerHTML = '<h2 class="results-title display-font">Pick one, tweak it, post it.</h2>';
+  posts.forEach((post, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="lang-grid">
+        <div class="lang-box">
+          <div class="lang-label">English</div>
+          <div class="hook display-font">${post.hook_en}</div>
+          <div class="caption">${post.caption_en}</div>
+          <div class="btn-row">
+            <button class="small copy-en">Copy</button>
+            <button class="small dark graphic-en">⬇ Graphic</button>
+          </div>
+        </div>
+        <div class="lang-box">
+          <div class="lang-label">മലയാളം</div>
+          <div class="hook ml-font" style="font-weight:600;">${post.hook_ml}</div>
+          <div class="caption ml-font">${post.caption_ml}</div>
+          <div class="btn-row">
+            <button class="small copy-ml">Copy</button>
+            <button class="small dark graphic-ml">⬇ Graphic</button>
+          </div>
+        </div>
+      </div>
+      ${post.hashtags && post.hashtags.length ? `<div class="hashtags">${post.hashtags.map(h => '#' + h.replace(/^#/, '')).join('  ')}</div>` : ''}
+    `;
+    resultsEl.appendChild(card);
+
+    const tagLine = post.hashtags && post.hashtags.length ? `\n\n${post.hashtags.map(h => '#' + h.replace(/^#/, '')).join(' ')}` : '';
+    card.querySelector('.copy-en').addEventListener('click', (e) => copyText(`${post.hook_en}\n\n${post.caption_en}${tagLine}`, e.target));
+    card.querySelector('.copy-ml').addEventListener('click', (e) => copyText(`${post.hook_ml}\n\n${post.caption_ml}${tagLine}`, e.target));
+    card.querySelector('.graphic-en').addEventListener('click', () => downloadGraphic(idx, 'en', post.hook_en, businessName));
+    card.querySelector('.graphic-ml').addEventListener('click', () => downloadGraphic(idx, 'ml', post.hook_ml, businessName));
+  });
+}
+
+generateBtn.addEventListener('click', async () => {
+  const businessName = businessNameEl.value.trim();
+  const businessType = businessTypeEl.value.trim();
+  const promoDetails = promoDetailsEl.value.trim();
+  if (!businessName || !businessType || !promoDetails) return;
+
+  generateBtn.disabled = true;
+  generateBtn.textContent = 'Writing your posts...';
+  errorMsg.style.display = 'none';
+  resultsEl.innerHTML = '';
+
+  try {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessName, businessType, promoDetails,
+        tone: toneEl.value, platform: platformEl.value,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Something went wrong.');
+    saveProfile();
+    savedNote.style.display = 'block';
+    renderResults(data.posts, businessName);
+  } catch (err) {
+    errorMsg.textContent = err.message;
+    errorMsg.style.display = 'block';
+  } finally {
+    generateBtn.disabled = false;
+    generateBtn.textContent = '✨ Generate posts';
+  }
+});
+</script>
+</body>
+</html>
